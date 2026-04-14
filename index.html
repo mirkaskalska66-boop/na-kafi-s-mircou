@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Na Kafi s Mirčou – Jarní nulté číslo</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+#mirca-header { width: 100%; background: #4a6e3e; color: #efe6e6; text-align: center; padding: 18px 20px 14px; }
+#mirca-header h1 { font-size: clamp(1.1rem, 4vw, 1.6rem); letter-spacing: 0.03em; font-weight: 700; }
+#mirca-header p { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; }
+#mirca-viewer { width: 100%; max-width: 960px; padding: 24px 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+#mirca-flipbook-wrap { width: 100%; display: flex; justify-content: center; align-items: center; perspective: 2000px; }
+.mirca-page-display { position: relative; width: 100%; max-width: 480px; background: #fff; box-shadow: 0 8px 32px rgba(0,0,0,0.18); border-radius: 3px; overflow: hidden; }
+.mirca-page-display img { width: 100%; height: auto; display: block; }
+@media (min-width: 700px) { #mirca-flipbook-wrap { gap: 2px; } .mirca-page-display { max-width: 420px; } }
+.mirca-page-display.flip-out-left { animation: mircaFlipOutLeft 0.35s ease-in forwards; }
+.mirca-page-display.flip-in-right { animation: mircaFlipInRight 0.35s ease-out forwards; }
+.mirca-page-display.flip-out-right { animation: mircaFlipOutRight 0.35s ease-in forwards; }
+.mirca-page-display.flip-in-left { animation: mircaFlipInLeft 0.35s ease-out forwards; }
+@keyframes mircaFlipOutLeft { from { transform: rotateY(0deg); opacity: 1; } to { transform: rotateY(-90deg); opacity: 0; } }
+@keyframes mircaFlipInRight { from { transform: rotateY(90deg); opacity: 0; } to { transform: rotateY(0deg); opacity: 1; } }
+@keyframes mircaFlipOutRight { from { transform: rotateY(0deg); opacity: 1; } to { transform: rotateY(90deg); opacity: 0; } }
+@keyframes mircaFlipInLeft { from { transform: rotateY(-90deg); opacity: 0; } to { transform: rotateY(0deg); opacity: 1; } }
+#mirca-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; padding: 4px 0 8px; }
+.mirca-btn { background: #4a6e3e; color: #efe6e6; border: none; border-radius: 6px; padding: 10px 22px; font-size: 1rem; cursor: pointer; transition: background 0.2s, transform 0.1s; user-select: none; }
+.mirca-btn:hover { background: #3a5630; }
+.mirca-btn:active { transform: scale(0.96); }
+.mirca-btn:disabled { background: #a0b89a; cursor: default; }
+#mirca-page-info { color: #111111; font-size: 0.95rem; min-width: 110px; text-align: center; }
+#mirca-thumbs { display: flex; gap: 6px; overflow-x: auto; padding: 8px 4px 12px; width: 100%; max-width: 960px; scrollbar-width: thin; scrollbar-color: #4a6e3e #efe6e6; }
+.mirca-thumb { flex: 0 0 auto; width: 64px; cursor: pointer; border: 2px solid transparent; border-radius: 3px; overflow: hidden; transition: border-color 0.2s, transform 0.15s; }
+.mirca-thumb:hover { transform: translateY(-2px); }
+.mirca-thumb.active { border-color: #4a6e3e; }
+.mirca-thumb img { width: 100%; height: auto; display: block; }
+#mirca-swipe-hint { color: #4a6e3e; font-size: 0.78rem; opacity: 0.7; text-align: center; padding-bottom: 20px; }
+#mirca-footer-div { width: 100%; background: #4a6e3e; color: #efe6e6; text-align: center; padding: 12px; font-size: 0.8rem; margin-top: auto; }
+</style>
+</head>
+<body>
+<div id="mirca-header">
+  <h1>Na Kafi s Mirčou</h1>
+  <p>Jarní nulté číslo</p>
+</div>
+<div id="mirca-viewer">
+  <div id="mirca-flipbook-wrap">
+    <div class="mirca-page-display" id="mirca-page-left">
+      <img id="mirca-img-left" src="" alt="Stránka">
+    </div>
+    <div class="mirca-page-display" id="mirca-page-right" style="display:none;">
+      <img id="mirca-img-right" src="" alt="Stránka">
+    </div>
+  </div>
+  <div id="mirca-controls">
+    <button class="mirca-btn" id="mirca-btn-prev" onclick="mircaPrevPage()">← Zpět</button>
+    <span id="mirca-page-info"></span>
+    <button class="mirca-btn" id="mirca-btn-next" onclick="mircaNextPage()">Další →</button>
+  </div>
+</div>
+<div id="mirca-thumbs"></div>
+<p id="mirca-swipe-hint">👆 Přejeďte prstem pro otočení stránky</p>
+<div id="mirca-footer-div">Na Kafi s Mirčou © Miroslava</div>
+<script>
+const BASE = "https://raw.githubusercontent.com/mirkaskalska66-boop/na-kafi-s-mircou/main/public/";
+const pages = Array.from({length: 35}, (_, i) => BASE + (i+1) + ".png");
+
+let mircaCurrent = 0;
+let mircaIsDesktop = window.innerWidth >= 700;
+let mircaAnimating = false;
+
+function mircaUpdateView(direction) {
+  const left = document.getElementById('mirca-page-left');
+  const right = document.getElementById('mirca-page-right');
+  document.getElementById('mirca-img-left').src = pages[mircaCurrent];
+  if (mircaIsDesktop && mircaCurrent + 1 < pages.length && mircaCurrent > 0) {
+    document.getElementById('mirca-img-right').src = pages[mircaCurrent + 1];
+    right.style.display = 'block';
+  } else { right.style.display = 'none'; }
+  if (direction) {
+    const outClass = direction === 'next' ? 'flip-out-left' : 'flip-out-right';
+    const inClass = direction === 'next' ? 'flip-in-right' : 'flip-in-left';
+    left.classList.add(outClass);
+    setTimeout(() => { left.classList.remove(outClass); left.classList.add(inClass); setTimeout(() => left.classList.remove(inClass), 350); }, 350);
+  }
+  document.getElementById('mirca-page-info').textContent = (mircaIsDesktop && mircaCurrent + 1 < pages.length && mircaCurrent > 0) ? `${mircaCurrent+1}–${mircaCurrent+2} / ${pages.length}` : `${mircaCurrent+1} / ${pages.length}`;
+  document.querySelectorAll('.mirca-thumb').forEach((t,i) => t.classList.toggle('active', i === mircaCurrent || (mircaIsDesktop && i === mircaCurrent+1)));
+  const active = document.querySelector('.mirca-thumb.active');
+  if (active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  document.getElementById('mirca-btn-prev').disabled = mircaCurrent === 0;
+  document.getElementById('mirca-btn-next').disabled = mircaCurrent >= pages.length - 1;
+}
+
+function mircaNextPage() {
+  if (mircaAnimating || mircaCurrent >= pages.length - 1) return;
+  mircaAnimating = true;
+  mircaCurrent = Math.min(mircaCurrent + (mircaIsDesktop && mircaCurrent > 0 ? 2 : 1), pages.length - 1);
+  mircaUpdateView('next');
+  setTimeout(() => mircaAnimating = false, 700);
+}
+
+function mircaPrevPage() {
+  if (mircaAnimating || mircaCurrent === 0) return;
+  mircaAnimating = true;
+  mircaCurrent = Math.max(mircaCurrent - (mircaIsDesktop && mircaCurrent > 1 ? 2 : 1), 0);
+  mircaUpdateView('prev');
+  setTimeout(() => mircaAnimating = false, 700);
+}
+
+function mircaGoToPage(idx) {
+  if (mircaAnimating) return;
+  mircaAnimating = true;
+  const dir = idx > mircaCurrent ? 'next' : 'prev';
+  mircaCurrent = idx;
+  mircaUpdateView(dir);
+  setTimeout(() => mircaAnimating = false, 700);
+}
+
+const strip = document.getElementById('mirca-thumbs');
+pages.forEach((src, i) => {
+  const div = document.createElement('div');
+  div.className = 'mirca-thumb';
+  div.onclick = () => mircaGoToPage(i);
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = `Stránka ${i+1}`;
+  div.appendChild(img);
+  strip.appendChild(div);
+});
+
+let mircaTouchStartX = 0;
+document.addEventListener('touchstart', e => { mircaTouchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - mircaTouchStartX; if (Math.abs(dx) > 50) dx < 0 ? mircaNextPage() : mircaPrevPage(); });
+document.addEventListener('keydown', e => { if (e.key==='ArrowRight'||e.key==='ArrowDown') mircaNextPage(); if (e.key==='ArrowLeft'||e.key==='ArrowUp') mircaPrevPage(); });
+window.addEventListener('resize', () => { const was = mircaIsDesktop; mircaIsDesktop = window.innerWidth >= 700; if (was !== mircaIsDesktop) mircaUpdateView(null); });
+
+mircaUpdateView(null);
+</script>
+</body>
+</html>
