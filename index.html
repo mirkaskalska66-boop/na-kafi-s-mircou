@@ -14,6 +14,7 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
 #mirca-flipbook-wrap { width: 100%; display: flex; justify-content: center; align-items: center; perspective: 2000px; }
 .mirca-page-display { position: relative; width: 100%; max-width: 480px; background: #fff; box-shadow: 0 8px 32px rgba(0,0,0,0.18); border-radius: 3px; overflow: hidden; }
 .mirca-page-display img { width: 100%; height: auto; display: block; }
+.mirca-link-overlay { position: absolute; display: block; cursor: pointer; left: 0; top: 0; width: 100%; height: 100%; }
 @media (min-width: 700px) { #mirca-flipbook-wrap { gap: 2px; } .mirca-page-display { max-width: 420px; } }
 .mirca-page-display.flip-out-left { animation: mircaFlipOutLeft 0.35s ease-in forwards; }
 .mirca-page-display.flip-in-right { animation: mircaFlipInRight 0.35s ease-out forwards; }
@@ -34,7 +35,10 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
 .mirca-thumb:hover { transform: translateY(-2px); }
 .mirca-thumb.active { border-color: #4a6e3e; }
 .mirca-thumb img { width: 100%; height: auto; display: block; }
-#mirca-swipe-hint { color: #4a6e3e; font-size: 0.78rem; opacity: 0.7; text-align: center; padding-bottom: 20px; }
+#mirca-swipe-hint { color: #4a6e3e; font-size: 0.78rem; opacity: 0.7; text-align: center; padding-bottom: 8px; }
+#mirca-extra-links { display: none; flex-direction: column; gap: 10px; align-items: center; padding: 8px 12px 16px; width: 100%; max-width: 480px; }
+#mirca-extra-links a { background: #4a6e3e; color: #efe6e6; text-decoration: none; border-radius: 8px; padding: 12px 24px; font-size: 0.95rem; text-align: center; width: 100%; transition: background 0.2s; }
+#mirca-extra-links a:hover { background: #3a5630; }
 #mirca-footer-div { width: 100%; background: #4a6e3e; color: #efe6e6; text-align: center; padding: 12px; font-size: 0.8rem; margin-top: auto; }
 </style>
 </head>
@@ -47,9 +51,11 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
   <div id="mirca-flipbook-wrap">
     <div class="mirca-page-display" id="mirca-page-left">
       <img id="mirca-img-left" src="" alt="Stránka">
+      <a id="mirca-link-left" class="mirca-link-overlay" target="_blank" rel="noopener" style="display:none;"></a>
     </div>
     <div class="mirca-page-display" id="mirca-page-right" style="display:none;">
       <img id="mirca-img-right" src="" alt="Stránka">
+      <a id="mirca-link-right" class="mirca-link-overlay" target="_blank" rel="noopener" style="display:none;"></a>
     </div>
   </div>
   <div id="mirca-controls">
@@ -58,6 +64,10 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
     <button class="mirca-btn" id="mirca-btn-next" onclick="mircaNextPage()">Další →</button>
   </div>
 </div>
+<div id="mirca-extra-links">
+  <a href="https://mirca-povzbuzeni-ventil.netlify.app/" target="_blank" rel="noopener">🖊️ Psát / vypsat se / srovnat si myšlenky</a>
+  <a href="https://mirca-kresleni.netlify.app/" target="_blank" rel="noopener">🎨 Čmárat / kreslit / vypustit emoce</a>
+</div>
 <div id="mirca-thumbs"></div>
 <p id="mirca-swipe-hint">👆 Přejeďte prstem pro otočení stránky</p>
 <div id="mirca-footer-div">Na Kafi s Mirčou © Miroslava</div>
@@ -65,24 +75,56 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
 const BASE = "/public/";
 const pages = Array.from({length: 35}, (_, i) => BASE + (i+1) + ".jpg");
 
+// Stránky s odkazem přes celý obrázek (index 0 = stránka 1)
+const pageLinks = {
+  11: "https://chvilka-pro-tebe.netlify.app/",
+  19: "https://recept-salatek-pro-radost.netlify.app/",
+  33: "https://chatgpt.com/g/g-6924bca7c3708191ba644d2a8dca3c0d-na-kafi-s-mircou-partacka-na-pohodu-po-50"
+};
+
+// Stránka 35 (index 34) má extra tlačítka pod obrázkem
+const extraLinksPage = 34;
+
 let mircaCurrent = 0;
 let mircaIsDesktop = window.innerWidth >= 700;
 let mircaAnimating = false;
+
+function mircaSetLink(elId, pageIdx) {
+  const el = document.getElementById(elId);
+  if (pageLinks[pageIdx] !== undefined) {
+    el.href = pageLinks[pageIdx];
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
 
 function mircaUpdateView(direction) {
   const left = document.getElementById('mirca-page-left');
   const right = document.getElementById('mirca-page-right');
   document.getElementById('mirca-img-left').src = pages[mircaCurrent];
+  mircaSetLink('mirca-link-left', mircaCurrent);
+
   if (mircaIsDesktop && mircaCurrent + 1 < pages.length && mircaCurrent > 0) {
     document.getElementById('mirca-img-right').src = pages[mircaCurrent + 1];
+    mircaSetLink('mirca-link-right', mircaCurrent + 1);
     right.style.display = 'block';
-  } else { right.style.display = 'none'; }
+  } else {
+    right.style.display = 'none';
+  }
+
+  // Zobrazit extra tlačítka jen na stránce 35
+  const extraLinks = document.getElementById('mirca-extra-links');
+  const showExtra = mircaCurrent === extraLinksPage || (mircaIsDesktop && mircaCurrent + 1 === extraLinksPage);
+  extraLinks.style.display = showExtra ? 'flex' : 'none';
+
   if (direction) {
     const outClass = direction === 'next' ? 'flip-out-left' : 'flip-out-right';
     const inClass = direction === 'next' ? 'flip-in-right' : 'flip-in-left';
     left.classList.add(outClass);
     setTimeout(() => { left.classList.remove(outClass); left.classList.add(inClass); setTimeout(() => left.classList.remove(inClass), 350); }, 350);
   }
+
   document.getElementById('mirca-page-info').textContent = (mircaIsDesktop && mircaCurrent + 1 < pages.length && mircaCurrent > 0) ? `${mircaCurrent+1}–${mircaCurrent+2} / ${pages.length}` : `${mircaCurrent+1} / ${pages.length}`;
   document.querySelectorAll('.mirca-thumb').forEach((t,i) => t.classList.toggle('active', i === mircaCurrent || (mircaIsDesktop && i === mircaCurrent+1)));
   const active = document.querySelector('.mirca-thumb.active');
