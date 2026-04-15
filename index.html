@@ -36,9 +36,9 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
 .mirca-thumb.active { border-color: #4a6e3e; }
 .mirca-thumb img { width: 100%; height: auto; display: block; }
 #mirca-swipe-hint { color: #4a6e3e; font-size: 0.78rem; opacity: 0.7; text-align: center; padding-bottom: 8px; }
-#mirca-extra-links { display: none; flex-direction: column; gap: 10px; align-items: center; padding: 8px 12px 16px; width: 100%; max-width: 480px; }
-#mirca-extra-links a { background: #4a6e3e; color: #efe6e6; text-decoration: none; border-radius: 8px; padding: 12px 24px; font-size: 0.95rem; text-align: center; width: 100%; transition: background 0.2s; }
-#mirca-extra-links a:hover { background: #3a5630; }
+.mirca-extra-links { display: none; flex-direction: column; gap: 10px; align-items: center; padding: 8px 12px 16px; width: 100%; max-width: 480px; }
+.mirca-extra-links a { background: #4a6e3e; color: #efe6e6; text-decoration: none; border-radius: 8px; padding: 12px 24px; font-size: 0.95rem; text-align: center; width: 100%; transition: background 0.2s; }
+.mirca-extra-links a:hover { background: #3a5630; }
 #mirca-footer-div { width: 100%; background: #4a6e3e; color: #efe6e6; text-align: center; padding: 12px; font-size: 0.8rem; margin-top: auto; }
 </style>
 </head>
@@ -64,7 +64,11 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
     <button class="mirca-btn" id="mirca-btn-next" onclick="mircaNextPage()">Další →</button>
   </div>
 </div>
-<div id="mirca-extra-links">
+<div id="mirca-extra-links-33" class="mirca-extra-links">
+  <a href="https://mirca-povzbuzeni-ventil.netlify.app/" target="_blank" rel="noopener">🖊️ Psát / vypsat se / srovnat si myšlenky</a>
+  <a href="https://mirca-kresleni.netlify.app/" target="_blank" rel="noopener">🎨 Čmárat / kreslit / vypustit emoce</a>
+</div>
+<div id="mirca-extra-links-35" class="mirca-extra-links">
   <a href="https://mirca-povzbuzeni-ventil.netlify.app/" target="_blank" rel="noopener">🖊️ Psát / vypsat se / srovnat si myšlenky</a>
   <a href="https://mirca-kresleni.netlify.app/" target="_blank" rel="noopener">🎨 Čmárat / kreslit / vypustit emoce</a>
 </div>
@@ -75,15 +79,13 @@ body { background: #efe6e6; font-family: Georgia, serif; min-height: 100vh; disp
 const BASE = "/public/";
 const pages = Array.from({length: 35}, (_, i) => BASE + (i+1) + ".jpg");
 
-// Stránky s odkazem přes celý obrázek (index 0 = stránka 1)
 const pageLinks = {
   11: "https://chvilka-pro-tebe.netlify.app/",
-  19: "https://recept-salatek-pro-radost.netlify.app/",
+  20: "https://recept-salatek-pro-radost.netlify.app/",
   33: "https://chatgpt.com/g/g-6924bca7c3708191ba644d2a8dca3c0d-na-kafi-s-mircou-partacka-na-pohodu-po-50"
 };
 
-// Stránka 35 (index 34) má extra tlačítka pod obrázkem
-const extraLinksPage = 34;
+const extraLinksPages = [32, 34]; // indexy 0-based pro stránky 33 a 35
 
 let mircaCurrent = 0;
 let mircaIsDesktop = window.innerWidth >= 700;
@@ -113,10 +115,11 @@ function mircaUpdateView(direction) {
     right.style.display = 'none';
   }
 
-  // Zobrazit extra tlačítka jen na stránce 35
-  const extraLinks = document.getElementById('mirca-extra-links');
-  const showExtra = mircaCurrent === extraLinksPage || (mircaIsDesktop && mircaCurrent + 1 === extraLinksPage);
-  extraLinks.style.display = showExtra ? 'flex' : 'none';
+  // Extra tlačítka pro stránky 33 a 35
+  const show33 = mircaCurrent === 32 || (mircaIsDesktop && mircaCurrent + 1 === 32);
+  const show35 = mircaCurrent === 34 || (mircaIsDesktop && mircaCurrent + 1 === 34);
+  document.getElementById('mirca-extra-links-33').style.display = show33 ? 'flex' : 'none';
+  document.getElementById('mirca-extra-links-35').style.display = show35 ? 'flex' : 'none';
 
   if (direction) {
     const outClass = direction === 'next' ? 'flip-out-left' : 'flip-out-right';
